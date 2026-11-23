@@ -84,6 +84,7 @@
   }
   .top { display: flex; align-items: center; gap: 8px; }
   h1 { font-size: 16px; margin: 0; font-weight: 700; letter-spacing: .02em; flex: 1; min-width: 0; }
+  .link-add { flex: none; }
   .view-toggle {
     display: inline-flex; background: var(--surface-2); border-radius: 9px; padding: 2px; flex: none;
     box-shadow: inset 0 0 0 1px var(--line);
@@ -304,6 +305,7 @@
   <header>
     <div class="top">
       <h1>学びの4段階</h1>
+      <button type="button" class="btn sm link-add" id="linkAddBtn">リンクで追加</button>
       <div class="view-toggle" role="group" aria-label="表示切り替え">
         <button type="button" id="vBoard" aria-pressed="true">ボード</button>
         <button type="button" id="vAch" aria-pressed="false">達成リスト</button>
@@ -358,6 +360,21 @@
         <button type="button" class="btn danger sm" id="fDelYes">削除する</button>
         <button type="button" class="btn sm" id="fDelNo">やめる</button>
       </div>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="pasteDlg" aria-labelledby="pasteTitle">
+  <form class="sheet" id="pasteForm" method="dialog" novalidate autocomplete="off">
+    <h2 id="pasteTitle">リンクで追加</h2>
+    <label class="f">
+      <span>追加リンク／コード</span>
+      <textarea id="pasteText" rows="4" placeholder="追加リンクまたはコードを貼り付け" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+    </label>
+    <div class="form-btns">
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="pasteCancel">やめる</button>
+      <button type="submit" class="btn primary" id="pasteOk">取り込む</button>
     </div>
   </form>
 </dialog>
@@ -938,16 +955,15 @@
     return decodeURIComponent(escape(bin));
   }
 
-  function importFromHash() {
-    var m = /^#add=(.*)$/.exec(location.hash || '');
-    if (!m) return;
+  // payload (base64url) -> 取り込み候補の配列。読めない／別アプリなら null
+  function decodeImport(payload) {
     var data;
     try {
-      var raw = m[1];
+      var raw = payload;
       try { raw = decodeURIComponent(raw); } catch (e) { /* keep as is */ }
       data = JSON.parse(b64urlToUtf8(raw.replace(/\s+/g, '')));
-    } catch (e) { return; }
-    if (!data || typeof data !== 'object' || data.app !== 'stages' || !Array.isArray(data.items)) return;
+    } catch (e) { return null; }
+    if (!data || typeof data !== 'object' || data.app !== 'stages' || !Array.isArray(data.items)) return null;
 
     var incoming = [];
     data.items.forEach(function (x) {
@@ -963,8 +979,11 @@
         notes: typeof x.notes === 'string' ? x.notes.replace(/\s+$/, '').slice(0, 2000) : ''
       });
     });
-    if (!incoming.length) return;
+    return incoming;
+  }
 
+  // 重複を除いて追加し、トーストを出す
+  function applyImport(incoming) {
     var now = Date.now();
     var added = 0;
     incoming.forEach(function (x) {
@@ -974,7 +993,6 @@
       added++;
     });
 
-    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ }
     if (added) {
       view = 'board';
       save();
@@ -984,6 +1002,55 @@
       showToast('すでに登録されています', null);
     }
   }
+
+  function importFromHash() {
+    var m = /^#add=(.*)$/.exec(location.hash || '');
+    if (!m) return;
+    var incoming = decodeImport(m[1]);
+    if (!incoming || !incoming.length) return;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ }
+    applyImport(incoming);
+  }
+
+  // ---------- paste import (アプリ内で貼り付け) ----------
+  var pasteDlg = $('pasteDlg');
+  var toastEl = $('toast');
+
+  function extractPayload(text) {
+    var s = String(text || '');
+    var i = s.indexOf('#add=');
+    s = (i >= 0 ? s.slice(i + 5) : s).trim();
+    return s.replace(/[^A-Za-z0-9_=-]+$/, '');
+  }
+
+  function openPaste() {
+    $('pasteText').value = '';
+    if (typeof pasteDlg.showModal === 'function') pasteDlg.showModal(); else pasteDlg.setAttribute('open', '');
+    // モーダル表示中もトーストが見えるようにダイアログ内へ移す
+    pasteDlg.appendChild(toastEl);
+    setTimeout(function () { $('pasteText').focus(); }, 30);
+  }
+
+  function closePaste() {
+    if (typeof pasteDlg.close === 'function') pasteDlg.close(); else pasteDlg.removeAttribute('open');
+    document.body.appendChild(toastEl);
+  }
+
+  $('pasteForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var payload = extractPayload($('pasteText').value);
+    var incoming = payload ? decodeImport(payload) : null;
+    if (!incoming || !incoming.length) {
+      showToast('読み取れませんでした', null);
+      return;
+    }
+    closePaste();
+    applyImport(incoming);
+  });
+  $('pasteCancel').addEventListener('click', closePaste);
+  pasteDlg.addEventListener('click', function (e) { if (e.target === pasteDlg) closePaste(); });
+  pasteDlg.addEventListener('close', function () { document.body.appendChild(toastEl); });
+  $('linkAddBtn').addEventListener('click', openPaste);
 
   load();
   render();
