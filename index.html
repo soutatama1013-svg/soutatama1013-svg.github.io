@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121316" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="四領域">
+<title>四領域ボード</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --surface-2: #f0f1f4;
+    --text: #1d1f24;
+    --text-2: #5d6270;
+    --text-3: #8d93a1;
+    --border: #e2e4ea;
+    --shadow: 0 1px 2px rgba(20, 24, 36, .06), 0 2px 6px rgba(20, 24, 36, .06);
+    --shadow-lift: 0 10px 24px rgba(20, 24, 36, .18), 0 3px 8px rgba(20, 24, 36, .12);
+    --danger: #d93036;
+    --accent: #2f7cf6;
+
+    --q1: #e5484d; --q1-bg: #fdeeee; --q1-soft: #f8d3d4;
+    --q2: #2f7cf6; --q2-bg: #ebf2ff; --q2-soft: #cfe0fd;
+    --q3: #e8900c; --q3-bg: #fff5e3; --q3-soft: #fbe0b0;
+    --q4: #8b8f9b; --q4-bg: #f1f2f4; --q4-soft: #dcdee3;
+
+    --radius: 12px;
+    --bar-h: 72px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", "Noto Sans JP", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121316;
+      --surface: #1d1e23;
+      --surface-2: #26282e;
+      --text: #ecedf0;
+      --text-2: #a9adb8;
+      --text-3: #737885;
+      --border: #30323a;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 2px 6px rgba(0, 0, 0, .3);
+      --shadow-lift: 0 12px 28px rgba(0, 0, 0, .55), 0 4px 10px rgba(0, 0, 0, .4);
+      --danger: #ff6369;
+      --accent: #5b9bff;
+
+      --q1: #f16a6e; --q1-bg: #2c1a1c; --q1-soft: #4a2427;
+      --q2: #5b9bff; --q2-bg: #16223a; --q2-soft: #1f3560;
+      --q3: #f5ae3d; --q3-bg: #2c2314; --q3-soft: #4a3816;
+      --q4: #9a9eaa; --q4-bg: #212227; --q4-soft: #363840;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.45;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  /* ---------- Header / meter ---------- */
+  .app-header {
+    padding: calc(10px + env(safe-area-inset-top)) 12px 8px;
+    max-width: 1200px; width: 100%; margin: 0 auto;
+  }
+  .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .app-title { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: .02em; }
+  .open-count { font-size: 12px; color: var(--text-2); }
+
+  .meter {
+    margin-top: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    transition: border-color .2s, background-color .2s;
+  }
+  .meter-bar {
+    display: flex; height: 10px; border-radius: 999px; overflow: hidden;
+    background: var(--surface-2);
+    outline: 2px solid transparent; outline-offset: 2px;
+    transition: outline-color .2s;
+  }
+  .meter-seg { height: 100%; transition: width .35s ease; min-width: 0; }
+  .meter-seg[data-q="1"] { background: var(--q1); }
+  .meter-seg[data-q="2"] { background: var(--q2); }
+  .meter-seg[data-q="3"] { background: var(--q3); }
+  .meter-seg[data-q="4"] { background: var(--q4); }
+  .meter-legend {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    margin-top: 8px; font-size: 12px; color: var(--text-2);
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; white-space: nowrap; min-width: 0; }
+  .legend-item b { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 600; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .dot[data-q="1"] { background: var(--q1); }
+  .dot[data-q="2"] { background: var(--q2); }
+  .dot[data-q="3"] { background: var(--q3); }
+  .dot[data-q="4"] { background: var(--q4); }
+  .legend-item[data-q="2"] b { color: var(--q2); }
+  .meter-msg { margin-top: 6px; font-size: 12px; color: var(--q2); }
+  .meter-warn {
+    margin-top: 6px; font-size: 13px; font-weight: 700; color: var(--danger);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .meter.warn { border-color: var(--q1); background: var(--q1-bg); }
+  .meter.warn .meter-bar { outline-color: var(--danger); }
+  .meter.warn .meter-seg[data-q="1"] {
+    background: repeating-linear-gradient(-45deg, var(--danger) 0 6px, color-mix(in srgb, var(--danger) 70%, #000) 6px 12px);
+  }
+
+  /* ---------- Board ---------- */
+  main {
+    flex: 1;
+    min-height: 460px;
+    display: flex;
+    max-width: 1200px; width: 100%; margin: 0 auto;
+    padding: 4px 12px calc(var(--bar-h) + env(safe-area-inset-bottom));
+  }
+  /* Coordinate plane: origin at bottom-left. Y = 緊急度 (up), X = 重要度 (right) */
+  .plane {
+    flex: 1; min-height: 0; min-width: 0;
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 14px;
+    column-gap: 4px; row-gap: 3px;
+  }
+  .axis {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; letter-spacing: .08em; color: var(--text-3);
+    pointer-events: none; user-select: none; -webkit-user-select: none;
+  }
+  .axis span { position: relative; background: var(--bg); line-height: 1; }
+  .axis::before { content: ""; position: absolute; background: var(--border); }
+  .axis-y { grid-column: 1; grid-row: 1; }
+  .axis-y::before { top: 0; bottom: 0; left: 50%; width: 1px; }
+  .axis-y span { writing-mode: vertical-rl; text-orientation: upright; padding: 6px 0; letter-spacing: .02em; }
+  .axis-x { grid-column: 2; grid-row: 2; }
+  .axis-x::before { left: 0; right: 0; top: 50%; height: 1px; }
+  .axis-x span { padding: 0 8px; }
+  .axis-origin { grid-column: 1; grid-row: 2; }
+  .board {
+    grid-column: 2; grid-row: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    min-height: 0;
+  }
+  .quad {
+    display: flex; flex-direction: column; min-height: 0; min-width: 0;
+    background: var(--qbg);
+    border: 1px solid transparent;
+    border-top: 3px solid var(--qc);
+    border-radius: var(--radius);
+    transition: box-shadow .15s, background-color .15s, border-color .15s;
+  }
+  .quad[data-q="1"] { --qc: var(--q1); --qbg: var(--q1-bg); --qsoft: var(--q1-soft); }
+  .quad[data-q="2"] { --qc: var(--q2); --qbg: var(--q2-bg); --qsoft: var(--q2-soft); }
+  .quad[data-q="3"] { --qc: var(--q3); --qbg: var(--q3-bg); --qsoft: var(--q3-soft); }
+  .quad[data-q="4"] { --qc: var(--q4); --qbg: var(--q4-bg); --qsoft: var(--q4-soft); }
+  .quad.drop-target {
+    border-color: var(--qc);
+    background: var(--qsoft);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--qc) 35%, transparent);
+  }
+  .quad-head {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 8px 6px 10px;
+  }
+  .quad-name { min-width: 0; flex: 1; }
+  .quad-name h2 { margin: 0; font-size: 14px; font-weight: 700; color: var(--qc); line-height: 1.2; }
+  .quad-name p { margin: 1px 0 0; font-size: 11px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge {
+    min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px;
+    background: var(--qc); color: #fff; font-size: 12px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+  @media (prefers-color-scheme: dark) { .badge { color: #111; } }
+  .quad-add {
+    width: 26px; height: 26px; border-radius: 8px; border: none;
+    background: transparent; color: var(--qc); font-size: 18px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .quad-add:hover { background: var(--qsoft); }
+  .list {
+    list-style: none; margin: 0; padding: 0 4px 6px;
+    overflow-y: auto; flex: 1; min-height: 0;
+    display: flex; flex-direction: column; gap: 3px;
+    overscroll-behavior: contain;
+  }
+  .empty {
+    margin: auto; padding: 12px 4px; text-align: center;
+    font-size: 12px; color: var(--text-3);
+  }
+
+  /* ---------- Card ---------- */
+  .card {
+    position: relative; flex: none;
+    display: flex; align-items: flex-start; gap: 3px;
+    background: var(--surface);
+    border-radius: 7px;
+    box-shadow: var(--shadow);
+    padding: 3px 1px 3px 2px;
+    cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+    transition: transform .15s, box-shadow .15s, opacity .2s;
+    border-left: 3px solid var(--qc);
+  }
+  .card:hover { box-shadow: var(--shadow-lift); }
+  @media (hover: hover) { .card { cursor: grab; } }
+  .card.lifting { transform: rotate(1.5deg) scale(1.03); box-shadow: var(--shadow-lift); }
+  .card.drag-origin { opacity: .35; transform: none; box-shadow: none; }
+  .card.done { opacity: .5; box-shadow: none; background: color-mix(in srgb, var(--surface) 60%, transparent); }
+  .card.done .card-title { text-decoration: line-through; color: var(--text-2); }
+  .card.flash { animation: flash .9s ease; }
+  @keyframes flash {
+    0% { box-shadow: 0 0 0 3px var(--qc), var(--shadow-lift); transform: scale(1.03); }
+    100% { box-shadow: var(--shadow); transform: none; }
+  }
+  .check {
+    flex: none; width: 20px; height: 20px; margin: -1px 0 0;
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .check input {
+    appearance: none; -webkit-appearance: none; margin: 0;
+    width: 13px; height: 13px; border-radius: 50%;
+    border: 1.5px solid var(--qc); background: transparent; cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .check input:checked { background: var(--qc); }
+  .check input:checked::after {
+    content: ""; width: 3px; height: 6px; margin-top: -1px;
+    border: solid var(--surface); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
+  }
+  .check input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card-body { flex: 1; min-width: 0; padding-top: 1px; }
+  .card-title {
+    font-size: 12px; font-weight: 500; line-height: 1.3;
+    word-break: break-word; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+  }
+  .card-meta {
+    display: flex; flex-wrap: nowrap; gap: 6px; margin-top: 1px; align-items: center;
+    font-size: 10px; line-height: 1.3; min-width: 0; overflow: hidden;
+  }
+  .proj {
+    display: inline-flex; align-items: center; gap: 3px; min-width: 0;
+    color: var(--text-2); white-space: nowrap;
+  }
+  .proj i {
+    flex: none; width: 6px; height: 6px; border-radius: 50%;
+    background: hsl(var(--h) 65% 52%);
+  }
+  .proj span { overflow: hidden; text-overflow: ellipsis; max-width: 6em; }
+  .memo { flex: none; display: inline-flex; color: var(--text-3); }
+  .memo svg { width: 10px; height: 10px; }
+  .chip {
+    display: inline-block; max-width: 100%;
+    font-size: 11px; line-height: 1; padding: 4px 7px; border-radius: 999px;
+    background: hsl(var(--h) 75% 92%); color: hsl(var(--h) 55% 30%);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  @media (prefers-color-scheme: dark) {
+    .chip { background: hsl(var(--h) 30% 24%); color: hsl(var(--h) 70% 82%); }
+  }
+  .due { flex: none; color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .due.soon { color: var(--q3); font-weight: 600; }
+  .due.today { color: var(--q3); font-weight: 700; }
+  .due.overdue { color: var(--danger); font-weight: 700; }
+  .move-btn {
+    flex: none; width: 22px; height: 22px; margin: -2px 0;
+    border: none; border-radius: 6px; background: transparent; color: var(--text-3);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .move-btn:hover, .move-btn:focus-visible { background: var(--surface-2); color: var(--text); }
+  .move-btn svg { width: 12px; height: 12px; }
+
+  /* ---------- Bottom bar ---------- */
+  .add-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    display: flex; justify-content: center;
+    background: linear-gradient(to top, var(--bg) 60%, transparent);
+    pointer-events: none;
+  }
+  .add-btn {
+    pointer-events: auto;
+    width: 100%; max-width: 420px; height: 50px;
+    border: none; border-radius: 999px;
+    background: var(--text); color: var(--bg);
+    font-size: 15px; font-weight: 700; letter-spacing: .04em;
+    box-shadow: var(--shadow-lift);
+  }
+  .add-btn:active { transform: scale(.98); }
+
+  /* ---------- Dialogs ---------- */
+  dialog {
+    border: none; padding: 0; color: var(--text); background: var(--surface);
+    width: 100%; max-width: 100%;
+    margin: auto auto 0; border-radius: 18px 18px 0 0;
+    box-shadow: var(--shadow-lift);
+    max-height: 92dvh;
+  }
+  dialog::backdrop { background: rgba(10, 12, 18, .45); }
+  dialog[open] { animation: sheet-in .22s ease; }
+  @keyframes sheet-in { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .sheet { padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .sheet h3 { margin: 0 0 12px; font-size: 16px; }
+  .field { margin-bottom: 14px; }
+  .field > label, .field > .label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+  .req { color: var(--danger); margin-left: 2px; }
+  .input {
+    width: 100%; height: 42px; padding: 0 12px;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg); font-size: 16px;
+  }
+  .input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  textarea.input {
+    height: auto; min-height: 72px; max-height: 40dvh; padding: 9px 12px;
+    line-height: 1.5; resize: vertical; display: block;
+  }
+  .label-hint { font-weight: 500; color: var(--text-3); margin-left: 6px; font-size: 11px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row .input { flex: 1; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag-list .chip { border: 2px solid transparent; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+  .tag-list .chip[aria-pressed="true"] { border-color: currentColor; }
+  .ghost-btn {
+    height: 42px; padding: 0 12px; border-radius: 10px;
+    border: 1px solid var(--border); background: transparent; color: var(--text-2); white-space: nowrap;
+  }
+  .quad-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .quad-pick label {
+    display: block; position: relative; cursor: pointer;
+    padding: 9px 10px; border-radius: 10px;
+    background: var(--qbg); border: 2px solid transparent;
+    font-size: 12px; color: var(--text-2);
+  }
+  .quad-pick label b { display: block; color: var(--qc); font-size: 13px; }
+  .quad-pick input { position: absolute; opacity: 0; pointer-events: none; }
+  .quad-pick label:has(input:checked) { border-color: var(--qc); }
+  .quad-pick label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .quad-pick [data-q="1"] { --qc: var(--q1); --qbg: var(--q1-bg); }
+  .quad-pick [data-q="2"] { --qc: var(--q2); --qbg: var(--q2-bg); }
+  .quad-pick [data-q="3"] { --qc: var(--q3); --qbg: var(--q3-bg); }
+  .quad-pick [data-q="4"] { --qc: var(--q4); --qbg: var(--q4-bg); }
+  .actions { display: flex; gap: 8px; margin-top: 18px; }
+  .actions .spacer { flex: 1; }
+  .btn {
+    height: 44px; padding: 0 18px; border-radius: 10px; border: none;
+    font-weight: 700; font-size: 14px;
+  }
+  .btn-primary { background: var(--text); color: var(--bg); }
+  .btn-secondary { background: var(--surface-2); color: var(--text); }
+  .btn-danger { background: transparent; color: var(--danger); padding: 0 10px; }
+  .error { color: var(--danger); font-size: 12px; margin-top: 4px; }
+
+  .move-sub { margin: -6px 0 12px; font-size: 13px; color: var(--text-2); overflow-wrap: anywhere; }
+  .move-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .move-grid button {
+    text-align: left; padding: 14px 12px; min-height: 72px;
+    border-radius: 12px; border: 2px solid transparent;
+    background: var(--qbg); color: var(--text-2); font-size: 12px;
+  }
+  .move-grid button b { display: block; color: var(--qc); font-size: 14px; margin-bottom: 2px; }
+  .move-grid button:hover:not(:disabled) { border-color: var(--qc); }
+  .move-grid button:disabled { cursor: default; opacity: .55; }
+  .move-grid button:disabled b::after { content: "（現在）"; font-weight: 500; font-size: 11px; color: var(--text-2); }
+  .move-grid [data-q="1"] { --qc: var(--q1); --qbg: var(--q1-bg); }
+  .move-grid [data-q="2"] { --qc: var(--q2); --qbg: var(--q2-bg); }
+  .move-grid [data-q="3"] { --qc: var(--q3); --qbg: var(--q3-bg); }
+  .move-grid [data-q="4"] { --qc: var(--q4); --qbg: var(--q4-bg); }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: calc(var(--bar-h) + 8px + env(safe-area-inset-bottom)); z-index: 20;
+    transform: translate(-50%, 10px); opacity: 0; pointer-events: none;
+    background: var(--text); color: var(--bg);
+    border-radius: 10px; padding: 10px 14px; font-size: 13px;
+    display: flex; gap: 14px; align-items: center; max-width: calc(100% - 24px);
+    box-shadow: var(--shadow-lift);
+    transition: opacity .2s, transform .2s;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  .toast button { border: none; background: transparent; color: var(--q2-soft); font-weight: 700; padding: 0; white-space: nowrap; }
+  @media (prefers-color-scheme: dark) { .toast button { color: var(--q2-bg); } }
+
+  /* ---------- Larger screens ---------- */
+  @media (min-width: 640px) {
+    .app-header { padding: 18px 20px 10px; }
+    .title-row { align-items: center; }
+    .app-title { font-size: 22px; }
+    .meter { padding: 12px 16px; }
+    .meter-bar { height: 12px; }
+    .meter-legend { font-size: 13px; }
+    main { padding: 6px 20px calc(var(--bar-h) + 8px); }
+    .board { gap: 14px; }
+    .quad-head { padding: 12px 12px 8px 14px; }
+    .quad-name h2 { font-size: 16px; }
+    .quad-name p { font-size: 12px; }
+    .plane { grid-template-columns: 16px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 16px; column-gap: 6px; row-gap: 4px; }
+    .axis { font-size: 11px; }
+    .list { padding: 0 8px 8px; gap: 4px; }
+    .card { padding: 4px 2px 4px 4px; gap: 4px; }
+    .card-title { font-size: 13px; }
+    .card-meta { font-size: 11px; }
+    .chip { font-size: 12px; }
+    dialog { max-width: 460px; margin: auto; border-radius: 18px; }
+    .sheet { padding: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="title-row">
+    <h1 class="app-title">四領域ボード</h1>
+    <span class="open-count" id="openCount"></span>
+  </div>
+  <section class="meter" id="meter" aria-label="領域バランスメーター">
+    <div class="meter-bar" id="meterBar" role="img" aria-label="">
+      <div class="meter-seg" data-q="1"></div>
+      <div class="meter-seg" data-q="2"></div>
+      <div class="meter-seg" data-q="3"></div>
+      <div class="meter-seg" data-q="4"></div>
+    </div>
+    <div class="meter-legend" id="meterLegend"></div>
+    <div class="meter-warn" id="meterWarn" role="alert" hidden>
+      <span aria-hidden="true">⚠</span><span>第1領域が溜まりすぎています</span>
+    </div>
+    <div class="meter-msg" id="meterMsg"></div>
+  </section>
+</header>
+
+<main>
+  <div class="plane">
+    <div class="axis axis-y" aria-hidden="true"><span>緊急度 ↑</span></div>
+    <div class="board" id="board" aria-label="四領域ボード（縦軸：緊急度、横軸：重要度）"></div>
+    <div class="axis axis-origin" aria-hidden="true"></div>
+    <div class="axis axis-x" aria-hidden="true"><span>重要度 →</span></div>
+  </div>
+</main>
+
+<div class="add-bar">
+  <button class="add-btn" id="addBtn" type="button">＋ タスク追加</button>
+</div>
+
+<!-- Add / Edit dialog -->
+<dialog id="taskDialog" aria-labelledby="taskDialogTitle">
+  <form class="sheet" id="taskForm" novalidate>
+    <h3 id="taskDialogTitle">タスクを追加</h3>
+    <div class="field">
+      <label for="fTitle">タイトル<span class="req">*</span></label>
+      <input class="input" id="fTitle" type="text" maxlength="120" autocomplete="off" placeholder="例：企画書の下書きを作る">
+      <div class="error" id="fTitleErr" hidden>タイトルを入力してください</div>
+    </div>
+    <div class="field">
+      <label for="fTag">案件タグ</label>
+      <input class="input" id="fTag" type="text" maxlength="30" autocomplete="off" list="tagOptions" placeholder="選ぶか、新しく入力">
+      <datalist id="tagOptions"></datalist>
+      <div class="tag-list" id="tagList"></div>
+    </div>
+    <div class="field">
+      <label for="fDue">期限</label>
+      <div class="row">
+        <input class="input" id="fDue" type="date">
+        <button class="ghost-btn" type="button" id="fDueClear">なし</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="label">領域<span class="req">*</span><span class="label-hint">↑緊急度 ／ 重要度→</span></span>
+      <div class="quad-pick" id="quadPick" role="radiogroup" aria-label="領域"></div>
+    </div>
+    <div class="field">
+      <label for="fNotes">備考<span class="label-hint">任意</span></label>
+      <textarea class="input" id="fNotes" rows="3" maxlength="2000" placeholder="メモ・補足など"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn btn-danger" type="button" id="deleteBtn" hidden>削除</button>
+      <span class="spacer"></span>
+      <button class="btn btn-secondary" type="button" id="cancelBtn">キャンセル</button>
+      <button class="btn btn-primary" type="submit" id="saveBtn">追加</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Move dialog -->
+<dialog id="moveDialog" aria-labelledby="moveDialogTitle">
+  <div class="sheet">
+    <h3 id="moveDialogTitle">移動先の領域を選ぶ<span class="label-hint">↑緊急度 ／ 重要度→</span></h3>
+    <p class="move-sub" id="moveSub"></p>
+    <div class="move-grid" id="moveGrid"></div>
+    <div class="actions">
+      <span class="spacer"></span>
+      <button class="btn btn-secondary" type="button" id="moveCancel">キャンセル</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <span id="toastMsg"></span>
+  <button type="button" id="toastAction" hidden>元に戻す</button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORAGE_KEY = 'quadrant-tasks-v1';
+  var QUADS = {
+    1: { name: '第1領域', sub: '重要 × 緊急' },
+    2: { name: '第2領域', sub: '重要 × 緊急ではない（投資）' },
+    3: { name: '第3領域', sub: '緊急 × 重要ではない' },
+    4: { name: '第4領域', sub: '重要でも緊急でもない' }
+  };
+  var QUAD_ORDER = [1, 2, 3, 4];          // numeric order (meter / legend)
+  // Spatial order on a coordinate plane, origin bottom-left (row-major, top row first):
+  //   左上=第3  右上=第1 / 左下=第4  右下=第2
+  var GRID_ORDER = [3, 1, 4, 2];
+  var MEMO_ICON = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 1.5h5l2 2v7h-7z"/><path d="M4 5.5h4M4 7.5h3"/></svg>';
+  var MOVE_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5v13M1.5 8h13M8 1.5 6 3.5M8 1.5l2 2M8 14.5l-2-2M8 14.5l2-2M1.5 8l2-2M1.5 8l2 2M14.5 8l-2-2M14.5 8l-2 2"/></svg>';
+
+  /* ---------- Utilities ---------- */
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function isoDate(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function todayISO() { return isoDate(new Date()); }
+  function addDays(n) { var d = new Date(); d.setDate(d.getDate() + n); return isoDate(d); }
+  function parseISO(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function dayDiff(iso) {
+    var t = new Date(); t.setHours(0, 0, 0, 0);
+    return Math.round((parseISO(iso) - t) / 86400000);
+  }
+  function tagHue(tag) {
+    var h = 0;
+    for (var i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) >>> 0;
+    var hues = [265, 160, 330, 190, 25, 120, 290, 50, 210, 0];
+    return hues[h % hues.length];
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  /* ---------- Storage ---------- */
+  var memoryStore = null; // fallback when localStorage is unavailable
+
+  function seedTasks() {
+    var now = Date.now();
+    var list = [
+      { title: '明日の会議用の提案書を仕上げる', tag: '仕事', due: addDays(1), q: 1 },
+      { title: '今月の家賃を振り込む', tag: '生活', due: addDays(0), q: 1 },
+      { title: '資格試験の勉強（1日30分）', tag: '勉強', due: '', q: 2, notes: '平日は通勤中に問題集、週末に模試' },
+      { title: '週次の振り返りと来週の計画', tag: '仕事', due: addDays(4), q: 2 },
+      { title: '急ぎの問い合わせメールに返信', tag: '仕事', due: addDays(0), q: 3 },
+      { title: '回覧板を回す', tag: '生活', due: addDays(2), q: 3 },
+      { title: 'なんとなくSNSを眺める', tag: '生活', due: '', q: 4 },
+      { title: '読まないメルマガを整理する', tag: '勉強', due: '', q: 4 }
+    ];
+    return list.map(function (t, i) {
+      return { id: uid() + i, title: t.title, tag: t.tag, due: t.due, q: t.q, notes: t.notes || '', done: false, createdAt: now + i, doneAt: 0 };
+    });
+  }
+
+  function sanitize(t) {
+    if (!t || typeof t !== 'object' || typeof t.title !== 'string' || !t.title.trim()) return null;
+    var q = Number(t.q);
+    return {
+      id: String(t.id || uid()),
+      title: t.title,
+      tag: typeof t.tag === 'string' ? t.tag : '',
+      due: typeof t.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.due) ? t.due : '',
+      q: q >= 1 && q <= 4 ? q : 2,
+      notes: typeof t.notes === 'string' ? t.notes : '',   // v2: older data has no notes → empty
+      done: !!t.done,
+      createdAt: Number(t.createdAt) || Date.now(),
+      doneAt: Number(t.doneAt) || 0
+    };
+  }
+
+  function load() {
+    var raw;
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = memoryStore; }
+    if (raw === null || raw === undefined) {
+      var seeded = seedTasks();       // first run only
+      persist(seeded);
+      return seeded;
+    }
+    try {
+      var arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      return arr.map(sanitize).filter(Boolean);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function persist(list) {
+    var json = JSON.stringify(list);
+    try { localStorage.setItem(STORAGE_KEY, json); } catch (e) { memoryStore = json; }
+  }
+
+  var tasks = load();
+  function save() { persist(tasks); }
+  function findTask(id) { for (var i = 0; i < tasks.length; i++) if (tasks[i].id === id) return tasks[i]; return null; }
+
+  /* ---------- Board ---------- */
+  var board = document.getElementById('board');
+  var lists = {};
+  var badges = {};
+  var flashId = null;
+
+  GRID_ORDER.forEach(function (q) {
+    var sec = el('section', 'quad');
+    sec.dataset.q = q;
+    sec.setAttribute('aria-label', QUADS[q].name + '：' + QUADS[q].sub);
+
+    var head = el('div', 'quad-head');
+    var name = el('div', 'quad-name');
+    name.appendChild(el('h2', null, QUADS[q].name));
+    name.appendChild(el('p', null, QUADS[q].sub));
+    var badge = el('span', 'badge', '0');
+    var add = el('button', 'quad-add', '+');
+    add.type = 'button';
+    add.dataset.addQ = q;
+    add.setAttribute('aria-label', QUADS[q].name + 'にタスクを追加');
+    add.title = QUADS[q].name + 'に追加';
+    head.appendChild(name);
+    head.appendChild(badge);
+    head.appendChild(add);
+
+    var ul = el('ul', 'list');
+    sec.appendChild(head);
+    sec.appendChild(ul);
+    board.appendChild(sec);
+    lists[q] = ul;
+    badges[q] = badge;
+  });
+
+  function sortTasks(a, b) {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    if (a.done) return (b.doneAt || 0) - (a.doneAt || 0);
+    var ad = a.due || '9999-99-99', bd = b.due || '9999-99-99';
+    if (ad !== bd) return ad < bd ? -1 : 1;
+    return a.createdAt - b.createdAt;
+  }
+
+  function dueInfo(t) {
+    if (!t.due) return null;
+    var diff = dayDiff(t.due);
+    var d = parseISO(t.due);
+    var md = (d.getMonth() + 1) + '/' + d.getDate();
+    var full = d.getFullYear() + '/' + md + ' まで';
+    var label, cls = 'due';
+    if (diff < 0) { label = '期限切れ'; cls += ' overdue'; }
+    else if (diff === 0) { label = '今日'; cls += ' today'; }
+    else if (diff === 1) { label = '明日'; cls += ' soon'; }
+    else label = md;
+    if (t.done) cls = 'due';
+    return { label: label, cls: cls, full: full };
+  }
+
+  function renderCard(t) {
+    var li = el('li', 'card' + (t.done ? ' done' : '') + (t.id === flashId ? ' flash' : ''));
+    li.dataset.id = t.id;
+    li.draggable = true;
+    li.tabIndex = 0;
+    var di = dueInfo(t);
+    var hasNotes = !!(t.notes && t.notes.trim());
+    li.setAttribute('aria-label', t.title + (t.done ? '（完了）' : '') +
+      (di ? '、期限 ' + di.full + (di.cls.indexOf('overdue') >= 0 ? '（期限切れ）' : '') : '') +
+      (t.tag ? '、案件 ' + t.tag : '') + (hasNotes ? '、備考あり' : '') + '。タップで編集');
+    li.style.setProperty('--qc', 'var(--q' + t.q + ')');
+
+    var lab = el('label', 'check');
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = t.done;
+    cb.setAttribute('aria-label', '完了にする');
+    lab.appendChild(cb);
+
+    var body = el('div', 'card-body');
+    var titleEl = el('div', 'card-title', t.title);
+    titleEl.title = t.title;
+    body.appendChild(titleEl);
+    // Card-face priority: title → due → project → memo indicator
+    if (di || t.tag || hasNotes) {
+      var meta = el('div', 'card-meta');
+      meta.setAttribute('aria-hidden', 'true');
+      if (di) {
+        var due = el('span', di.cls, di.label);
+        due.title = di.full;
+        meta.appendChild(due);
+      }
+      if (t.tag) {
+        var proj = el('span', 'proj');
+        proj.style.setProperty('--h', tagHue(t.tag));
+        proj.title = t.tag;
+        proj.appendChild(el('i'));
+        proj.appendChild(el('span', null, t.tag));
+        meta.appendChild(proj);
+      }
+      if (hasNotes) {
+        var memo = el('span', 'memo');
+        memo.innerHTML = MEMO_ICON;
+        memo.title = '備考あり';
+        meta.appendChild(memo);
+      }
+      body.appendChild(meta);
+    }
+
+    var mv = el('button', 'move-btn');
+    mv.type = 'button';
+    mv.innerHTML = MOVE_ICON;
+    mv.setAttribute('aria-label', '別の領域へ移動');
+    mv.title = '別の領域へ移動';
+
+    li.appendChild(lab);
+    li.appendChild(body);
+    li.appendChild(mv);
+    return li;
+  }
+
+  function render() {
+    var counts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    QUAD_ORDER.forEach(function (q) {
+      var ul = lists[q];
+      ul.textContent = '';
+      var items = tasks.filter(function (t) { return t.q === q; }).sort(sortTasks);
+      var open = 0;
+      items.forEach(function (t) { if (!t.done) open++; ul.appendChild(renderCard(t)); });
+      counts[q] = open;
+      if (!items.length) ul.appendChild(el('li', 'empty', 'タスクなし'));
+      badges[q].textContent = open;
+      badges[q].title = '未完了 ' + open + ' 件 / 全 ' + items.length + ' 件';
+    });
+    flashId = null;
+    renderMeter(counts);
+  }
+
+  /* ---------- Balance meter ---------- */
+  var meter = document.getElementById('meter');
+  var meterBar = document.getElementById('meterBar');
+  var meterLegend = document.getElementById('meterLegend');
+  var meterWarn = document.getElementById('meterWarn');
+  var meterMsg = document.getElementById('meterMsg');
+  var openCount = document.getElementById('openCount');
+
+  function renderMeter(counts) {
+    var total = counts[1] + counts[2] + counts[3] + counts[4];
+    var pct = {};
+    QUAD_ORDER.forEach(function (q) { pct[q] = total ? counts[q] / total * 100 : 0; });
+
+    meterBar.querySelectorAll('.meter-seg').forEach(function (seg) {
+      seg.style.width = pct[seg.dataset.q] + '%';
+    });
+    meterLegend.textContent = '';
+    QUAD_ORDER.forEach(function (q) {
+      var item = el('div', 'legend-item');
+      item.dataset.q = q;
+      var dot = el('span', 'dot'); dot.dataset.q = q;
+      item.appendChild(dot);
+      item.appendChild(document.createTextNode('第' + q + ' '));
+      item.appendChild(el('b', null, Math.round(pct[q]) + '%'));
+      meterLegend.appendChild(item);
+    });
+    meterBar.setAttribute('aria-label', QUAD_ORDER.map(function (q) {
+      return QUADS[q].name + ' ' + Math.round(pct[q]) + '%';
+    }).join('、'));
+
+    openCount.textContent = '未完了 ' + total + ' 件';
+
+    var warn = pct[1] > 50;
+    meter.classList.toggle('warn', warn);
+    meterWarn.hidden = !warn;
+
+    // 第2領域は常にポジティブに
+    var p2 = Math.round(pct[2]), msg;
+    if (!total) msg = '未完了タスクはありません。第2領域に未来への投資を足してみましょう';
+    else if (p2 >= 40) msg = '✦ 第2領域 ' + p2 + '% — 未来への投資がしっかりできています';
+    else if (p2 > 0) msg = '✦ 第2領域 ' + p2 + '% — 未来への投資、いい調子で続けましょう';
+    else msg = '✦ 第2領域は未来への投資。1件入れるところから始めましょう';
+    meterMsg.textContent = msg;
+  }
+
+  /* ---------- Actions ---------- */
+  function moveTask(id, q) {
+    var t = findTask(id);
+    if (!t || t.q === q) return;
+    var from = t.q;
+    t.q = q;
+    save();
+    flashId = id;
+    render();
+    showToast(QUADS[q].name + 'へ移動しました', function () {
+      var tt = findTask(id); if (tt) { tt.q = from; save(); render(); }
+    });
+  }
+
+  function toggleDone(id, done) {
+    var t = findTask(id);
+    if (!t) return;
+    t.done = done;
+    t.doneAt = done ? Date.now() : 0;
+    save();
+    render();
+  }
+
+  function deleteTask(id) {
+    var idx = -1;
+    for (var i = 0; i < tasks.length; i++) if (tasks[i].id === id) { idx = i; break; }
+    if (idx < 0) return;
+    var removed = tasks.splice(idx, 1)[0];
+    save();
+    render();
+    showToast('「' + (removed.title.length > 14 ? removed.title.slice(0, 14) + '…' : removed.title) + '」を削除しました', function () {
+      tasks.splice(Math.min(idx, tasks.length), 0, removed);
+      save();
+      render();
+    });
+  }
+
+  /* ---------- Toast ---------- */
+  var toast = document.getElementById('toast');
+  var toastMsg = document.getElementById('toastMsg');
+  var toastAction = document.getElementById('toastAction');
+  var toastTimer = null, toastUndo = null;
+
+  function showToast(msg, undo) {
+    toastMsg.textContent = msg;
+    toastUndo = undo || null;
+    toastAction.hidden = !undo;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, 4500);
+  }
+  function hideToast() { toast.classList.remove('show'); toastUndo = null; }
+  toastAction.addEventListener('click', function () {
+    var fn = toastUndo;
+    hideToast();
+    if (fn) fn();
+  });
+
+  /* ---------- Board events (click) ---------- */
+  board.addEventListener('change', function (e) {
+    if (e.target.matches('.check input')) {
+      var card = e.target.closest('.card');
+      toggleDone(card.dataset.id, e.target.checked);
+    }
+  });
+
+  board.addEventListener('click', function (e) {
+    var addQ = e.target.closest('[data-add-q]');
+    if (addQ) { openTaskDialog(null, Number(addQ.dataset.addQ)); return; }
+    var card = e.target.closest('.card');
+    if (!card) return;
+    if (e.target.closest('.check')) return;
+    if (e.target.closest('.move-btn')) { openMoveDialog(card.dataset.id); return; }
+    openTaskDialog(card.dataset.id);
+  });
+
+  board.addEventListener('keydown', function (e) {
+    var card = e.target.closest && e.target.closest('.card');
+    if (!card || e.target !== card) return;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTaskDialog(card.dataset.id); }
+    if (e.key === 'm' || e.key === 'M') { e.preventDefault(); openMoveDialog(card.dataset.id); }
+  });
+
+  /* ---------- Drag & drop (desktop) ---------- */
+  var dragId = null;
+
+  board.addEventListener('dragstart', function (e) {
+    var card = e.target.closest && e.target.closest('.card');
+    if (!card) return;
+    dragId = card.dataset.id;
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', dragId); } catch (err) { /* ignore */ }
+    card.classList.add('lifting');          // captured into the drag image
+    requestAnimationFrame(function () {
+      card.classList.remove('lifting');
+      card.classList.add('drag-origin');    // placeholder look for the source
+    });
+  });
+
+  function clearDropTargets() {
+    board.querySelectorAll('.quad.drop-target').forEach(function (q) { q.classList.remove('drop-target'); });
+  }
+
+  board.addEventListener('dragend', function (e) {
+    var card = e.target.closest && e.target.closest('.card');
+    if (card) card.classList.remove('lifting', 'drag-origin');
+    dragId = null;
+    clearDropTargets();
+  });
+
+  board.addEventListener('dragover', function (e) {
+    if (!dragId) return;
+    var quad = e.target.closest && e.target.closest('.quad');
+    if (!quad) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    var t = findTask(dragId);
+    var same = t && String(t.q) === quad.dataset.q;
+    if (!quad.classList.contains('drop-target') && !same) {
+      clearDropTargets();
+      quad.classList.add('drop-target');
+    } else if (same) {
+      clearDropTargets();
+    }
+  });
+
+  board.addEventListener('dragleave', function (e) {
+    var quad = e.target.closest && e.target.closest('.quad');
+    if (quad && !quad.contains(e.relatedTarget)) quad.classList.remove('drop-target');
+  });
+
+  board.addEventListener('drop', function (e) {
+    var quad = e.target.closest && e.target.closest('.quad');
+    if (!quad || !dragId) return;
+    e.preventDefault();
+    var id = dragId;
+    dragId = null;
+    clearDropTargets();
+    moveTask(id, Number(quad.dataset.q));
+  });
+
+  /* ---------- Move dialog (tap fallback) ---------- */
+  var moveDialog = document.getElementById('moveDialog');
+  var moveGrid = document.getElementById('moveGrid');
+  var moveSub = document.getElementById('moveSub');
+  var movingId = null;
+
+  GRID_ORDER.forEach(function (q) {
+    var b = el('button');
+    b.type = 'button';
+    b.dataset.q = q;
+    b.appendChild(el('b', null, QUADS[q].name));
+    b.appendChild(document.createTextNode(QUADS[q].sub));
+    moveGrid.appendChild(b);
+  });
+
+  function openMoveDialog(id) {
+    var t = findTask(id);
+    if (!t) return;
+    movingId = id;
+    moveSub.textContent = t.title;
+    var first = null;
+    moveGrid.querySelectorAll('button').forEach(function (b) {
+      b.disabled = Number(b.dataset.q) === t.q;
+      if (!b.disabled && !first) first = b;
+    });
+    showDialog(moveDialog);
+    if (first) first.focus();
+  }
+
+  moveGrid.addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b || b.disabled) return;
+    var id = movingId;
+    moveDialog.close();
+    moveTask(id, Number(b.dataset.q));
+  });
+  document.getElementById('moveCancel').addEventListener('click', function () { moveDialog.close(); });
+
+  /* ---------- Add / edit dialog ---------- */
+  var taskDialog = document.getElementById('taskDialog');
+  var form = document.getElementById('taskForm');
+  var fTitle = document.getElementById('fTitle');
+  var fTitleErr = document.getElementById('fTitleErr');
+  var fTag = document.getElementById('fTag');
+  var fDue = document.getElementById('fDue');
+  var fNotes = document.getElementById('fNotes');
+  var tagOptions = document.getElementById('tagOptions');
+  var tagList = document.getElementById('tagList');
+  var quadPick = document.getElementById('quadPick');
+  var deleteBtn = document.getElementById('deleteBtn');
+  var saveBtn = document.getElementById('saveBtn');
+  var dialogTitle = document.getElementById('taskDialogTitle');
+  var editingId = null;
+
+  GRID_ORDER.forEach(function (q) {
+    var lab = el('label');
+    lab.dataset.q = q;
+    var r = document.createElement('input');
+    r.type = 'radio'; r.name = 'quad'; r.value = q;
+    lab.appendChild(r);
+    lab.appendChild(el('b', null, QUADS[q].name));
+    lab.appendChild(document.createTextNode(QUADS[q].sub));
+    quadPick.appendChild(lab);
+  });
+
+  function existingTags() {
+    var seen = {}, out = [];
+    tasks.forEach(function (t) { if (t.tag && !seen[t.tag]) { seen[t.tag] = 1; out.push(t.tag); } });
+    return out.sort(function (a, b) { return a.localeCompare(b, 'ja'); });
+  }
+
+  function renderTagChoices() {
+    var tags = existingTags();
+    tagOptions.textContent = '';
+    tagList.textContent = '';
+    tags.forEach(function (tag) {
+      var o = document.createElement('option'); o.value = tag; tagOptions.appendChild(o);
+      var c = el('button', 'chip', tag);
+      c.type = 'button';
+      c.style.setProperty('--h', tagHue(tag));
+      c.setAttribute('aria-pressed', String(fTag.value.trim() === tag));
+      c.dataset.tag = tag;
+      tagList.appendChild(c);
+    });
+    tagList.hidden = !tags.length;
+  }
+  function syncTagPressed() {
+    var v = fTag.value.trim();
+    tagList.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', String(c.dataset.tag === v)); });
+  }
+  tagList.addEventListener('click', function (e) {
+    var c = e.target.closest('.chip');
+    if (!c) return;
+    fTag.value = fTag.value.trim() === c.dataset.tag ? '' : c.dataset.tag;
+    syncTagPressed();
+  });
+  fTag.addEventListener('input', syncTagPressed);
+  document.getElementById('fDueClear').addEventListener('click', function () { fDue.value = ''; });
+  fTitle.addEventListener('input', function () { if (fTitle.value.trim()) fTitleErr.hidden = true; });
+
+  function openTaskDialog(id, presetQ) {
+    var t = id ? findTask(id) : null;
+    editingId = t ? t.id : null;
+    dialogTitle.textContent = t ? 'タスクを編集' : 'タスクを追加';
+    saveBtn.textContent = t ? '保存' : '追加';
+    deleteBtn.hidden = !t;
+    fTitle.value = t ? t.title : '';
+    fTag.value = t ? t.tag : '';
+    fDue.value = t ? t.due : '';
+    fNotes.value = t ? (t.notes || '') : '';
+    fTitleErr.hidden = true;
+    var q = t ? t.q : (presetQ || 2);
+    quadPick.querySelectorAll('input').forEach(function (r) { r.checked = Number(r.value) === q; });
+    renderTagChoices();
+    showDialog(taskDialog);
+    if (!t || window.matchMedia('(hover: hover)').matches) {
+      setTimeout(function () { fTitle.focus(); }, 30);
+    }
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var title = fTitle.value.trim();
+    if (!title) { fTitleErr.hidden = false; fTitle.focus(); return; }
+    var checked = quadPick.querySelector('input:checked');
+    var q = checked ? Number(checked.value) : 2;
+    var tag = fTag.value.trim();
+    var due = fDue.value || '';
+    var notes = fNotes.value.replace(/\s+$/, '');
+    if (editingId) {
+      var t = findTask(editingId);
+      if (t) { t.title = title; t.tag = tag; t.due = due; t.q = q; t.notes = notes; flashId = t.id; }
+    } else {
+      var nt = { id: uid(), title: title, tag: tag, due: due, q: q, notes: notes, done: false, createdAt: Date.now(), doneAt: 0 };
+      tasks.push(nt);
+      flashId = nt.id;
+    }
+    save();
+    taskDialog.close();
+    render();
+    if (!editingId) showToast(QUADS[q].name + 'に追加しました');
+    var card = board.querySelector('.card.flash');
+    if (card && card.scrollIntoView) card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+
+  document.getElementById('cancelBtn').addEventListener('click', function () { taskDialog.close(); });
+  deleteBtn.addEventListener('click', function () {
+    var id = editingId;
+    taskDialog.close();
+    if (id) deleteTask(id);
+  });
+
+  document.getElementById('addBtn').addEventListener('click', function () { openTaskDialog(null, 2); });
+
+  /* ---------- Dialog helpers ---------- */
+  function showDialog(d) {
+    if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); }
+    else d.setAttribute('open', '');
+  }
+  [taskDialog, moveDialog].forEach(function (d) {
+    if (typeof d.close !== 'function') d.close = function () { d.removeAttribute('open'); };
+    // close on backdrop tap
+    d.addEventListener('click', function (e) { if (e.target === d) d.close(); });
+  });
+
+  // Keep in sync if another tab edits the data
+  window.addEventListener('storage', function (e) {
+    if (e.key !== STORAGE_KEY) return;
+    if (e.newValue === null) { tasks = []; save(); } else tasks = load(); // never re-seed after first run
+    render();
+  });
+
+  // Refresh due labels when the date changes (e.g., app left open overnight)
+  var lastDay = todayISO();
+  setInterval(function () { var d = todayISO(); if (d !== lastDay) { lastDay = d; render(); } }, 60000);
+
+  render();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
