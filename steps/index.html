@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>学びの4段階</title>
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171b" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="4段階">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../stages-icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../stages-icon-192.png">
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #eef0f3;
+    --text: #1d2026;
+    --text-2: #5d6470;
+    --text-3: #8a909b;
+    --line: #dde1e6;
+    --accent: #3a6df0;
+    --danger: #d23b3b;
+    --danger-bg: #fdecec;
+    --shadow: 0 1px 2px rgba(20, 24, 32, .10), 0 0 0 1px rgba(20, 24, 32, .04);
+    --shadow-lift: 0 6px 18px rgba(20, 24, 32, .18);
+    --s1: #8b95a5;
+    --s2: #d9932b;
+    --s3: #3a8de0;
+    --s4: #2fa36b;
+    --s1-bg: #eceef1;
+    --s2-bg: #fbf1e2;
+    --s3-bg: #e6f0fb;
+    --s4-bg: #e4f4eb;
+    --step: 10px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171b;
+      --surface: #23262c;
+      --surface-2: #1c1f24;
+      --text: #e8eaee;
+      --text-2: #a4abb6;
+      --text-3: #737a86;
+      --line: #343840;
+      --accent: #6d95ff;
+      --danger: #ff6b6b;
+      --danger-bg: #3a2224;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 0 0 1px rgba(255, 255, 255, .05);
+      --shadow-lift: 0 8px 22px rgba(0, 0, 0, .6);
+      --s1: #8d96a6;
+      --s2: #e0a24a;
+      --s3: #5aa4ef;
+      --s4: #4cc28a;
+      --s1-bg: #1f2227;
+      --s2-bg: #2a241b;
+      --s3-bg: #1b2531;
+      --s4-bg: #1a2a22;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Noto Sans JP", Meiryo, sans-serif;
+    font-size: 14px; line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  button { font: inherit; color: inherit; }
+  .app { flex: 1; min-height: 0; display: flex; flex-direction: column; width: 100%; max-width: 1100px; margin: 0 auto; }
+
+  /* Header + summary */
+  header {
+    flex: none; padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 6px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .top { display: flex; align-items: center; gap: 8px; }
+  h1 { font-size: 16px; margin: 0; font-weight: 700; letter-spacing: .02em; flex: 1; min-width: 0; }
+  .view-toggle {
+    display: inline-flex; background: var(--surface-2); border-radius: 9px; padding: 2px; flex: none;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .view-toggle button {
+    border: 0; background: transparent; padding: 4px 10px; border-radius: 7px; font-size: 12px; cursor: pointer; color: var(--text-2);
+  }
+  .view-toggle button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
+  .summary { display: flex; gap: 5px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    border: 0; border-radius: 999px; padding: 2px 9px 2px 7px; font-size: 11px; cursor: pointer;
+    background: var(--surface); box-shadow: var(--shadow); color: var(--text-2); white-space: nowrap;
+  }
+  .chip b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chip i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; background: var(--sc); }
+  .chip.achieved i { background: none; width: auto; height: auto; font-style: normal; }
+
+  /* Board: staircase */
+  main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0 12px; overflow-y: auto; }
+  .board { flex: 1; min-height: 394px; display: flex; flex-direction: column; gap: 6px; padding-bottom: 8px; }
+  .band {
+    --sc: var(--s1); --sb: var(--s1-bg);
+    flex: 1 1 0; min-height: 92px;
+    display: flex; flex-direction: column;
+    background: var(--sb);
+    border-radius: 10px;
+    border-left: 4px solid var(--sc);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc) 18%, transparent);
+    transition: box-shadow .12s, transform .12s;
+  }
+  .band[data-stage="1"] { --sc: var(--s1); --sb: var(--s1-bg); margin-right: calc(var(--step) * 3); }
+  .band[data-stage="2"] { --sc: var(--s2); --sb: var(--s2-bg); margin-left: var(--step); margin-right: calc(var(--step) * 2); }
+  .band[data-stage="3"] { --sc: var(--s3); --sb: var(--s3-bg); margin-left: calc(var(--step) * 2); margin-right: var(--step); }
+  .band[data-stage="4"] { --sc: var(--s4); --sb: var(--s4-bg); margin-left: calc(var(--step) * 3); }
+  .band.drop-over { box-shadow: inset 0 0 0 2px var(--sc); transform: scale(1.005); }
+  .band-head {
+    flex: none; display: flex; align-items: baseline; gap: 6px; padding: 5px 8px 3px 7px; min-width: 0;
+  }
+  .band-no {
+    flex: none; font-size: 10px; font-weight: 700; color: #fff; background: var(--sc);
+    border-radius: 5px; padding: 1px 5px; line-height: 1.4; align-self: center;
+  }
+  .band-name { flex: none; font-size: 12px; font-weight: 700; }
+  .band-def {
+    flex: 1; min-width: 0; font-size: 11px; color: var(--text-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .band-count { flex: none; font-size: 11px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .band-count b { color: var(--text); }
+  .cards {
+    flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    list-style: none; margin: 0; padding: 2px 6px 6px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 4px;
+    align-content: start;
+  }
+  .empty-band { grid-column: 1 / -1; font-size: 11px; color: var(--text-3); padding: 4px 2px; }
+
+  /* Cards */
+  .card {
+    position: relative;
+    display: flex; align-items: stretch; gap: 2px;
+    background: var(--surface); border-radius: 7px; box-shadow: var(--shadow);
+    padding: 3px 2px 3px 6px; cursor: pointer;
+    user-select: none; -webkit-user-select: none; min-width: 0;
+  }
+  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  @media (hover: hover) { .card:hover { box-shadow: var(--shadow-lift); } }
+  .card.dragging { opacity: .35; }
+  .card.flash { animation: flash .9s ease; }
+  @keyframes flash {
+    0% { box-shadow: 0 0 0 2px var(--sc), var(--shadow-lift); transform: scale(1.03); }
+    100% { box-shadow: var(--shadow); transform: none; }
+  }
+  .card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .card-title {
+    font-size: 12px; font-weight: 500; line-height: 1.3;
+    word-break: break-word; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+  }
+  .card-meta {
+    display: flex; align-items: center; gap: 6px; margin-top: 1px;
+    font-size: 10px; line-height: 1.3; color: var(--text-2); min-width: 0; white-space: nowrap;
+  }
+  .tag { display: inline-flex; align-items: center; gap: 3px; min-width: 0; overflow: hidden; }
+  .tag i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--tc, var(--text-3)); }
+  .tag span { overflow: hidden; text-overflow: ellipsis; max-width: 7em; }
+  .days { flex: none; font-variant-numeric: tabular-nums; }
+  .days.stale { color: var(--danger); font-weight: 700; }
+  .memo { flex: none; width: 10px; height: 10px; color: var(--text-3); }
+  .card-actions { flex: none; display: flex; flex-direction: column; justify-content: center; gap: 1px; }
+  .mv {
+    border: 0; background: transparent; color: var(--text-3);
+    width: 22px; height: 17px; padding: 0; border-radius: 4px; font-size: 9px; line-height: 1; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .mv:hover, .mv:focus-visible { background: var(--surface-2); color: var(--text); }
+  .mv:disabled { visibility: hidden; }
+  .grad {
+    border: 0; cursor: pointer; font-size: 10px; font-weight: 700; line-height: 1;
+    background: var(--s4); color: #fff; border-radius: 5px; padding: 4px 5px; align-self: center;
+    margin-left: 1px; white-space: nowrap;
+  }
+  .grad:hover { filter: brightness(1.08); }
+
+  /* Achieved list */
+  .achieved { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 8px; }
+  .achieved h2 { font-size: 13px; margin: 4px 0 6px; color: var(--text-2); font-weight: 600; }
+  .ach-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .ach {
+    background: var(--surface); border-radius: 9px; box-shadow: var(--shadow); padding: 7px 8px 7px 10px;
+    border-left: 4px solid var(--s4);
+  }
+  .ach-row { display: flex; align-items: center; gap: 8px; }
+  .ach-main { flex: 1; min-width: 0; }
+  .ach-name { font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+  .ach-meta { display: flex; gap: 8px; font-size: 11px; color: var(--text-2); margin-top: 1px; }
+  .ach-btns { flex: none; display: flex; gap: 4px; }
+  .ach-empty { color: var(--text-3); font-size: 12px; padding: 24px 0; text-align: center; }
+
+  .btn {
+    border: 0; border-radius: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer;
+    background: var(--surface-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); white-space: nowrap;
+  }
+  .btn.sm { padding: 4px 8px; font-size: 11px; border-radius: 6px; }
+  .btn.primary { background: var(--accent); color: #fff; box-shadow: none; font-weight: 600; }
+  .btn.danger { background: var(--danger); color: #fff; box-shadow: none; font-weight: 600; }
+  .btn.danger-ghost { background: transparent; color: var(--danger); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 45%, transparent); }
+
+  .confirm {
+    margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--danger-bg);
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .confirm p { margin: 0; flex: 1 1 auto; font-size: 13px; font-weight: 600; color: var(--danger); }
+  .confirm .btns { display: flex; gap: 6px; }
+
+  /* Footer add button */
+  footer {
+    flex: none; padding: 6px 12px calc(8px + var(--safe-b)); display: flex; justify-content: center;
+  }
+  .add {
+    border: 0; cursor: pointer; background: var(--accent); color: #fff; font-weight: 700; font-size: 15px;
+    border-radius: 999px; padding: 10px 28px; box-shadow: var(--shadow-lift); min-width: 160px;
+  }
+
+  /* Dialog / form */
+  dialog {
+    border: 0; padding: 0; background: var(--surface); color: var(--text);
+    width: 100%; max-width: 100%; margin: auto 0 0; border-radius: 16px 16px 0 0;
+    max-height: 92vh; box-shadow: var(--shadow-lift);
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, .38); }
+  .sheet { padding: 16px 16px calc(16px + var(--safe-b)); display: flex; flex-direction: column; gap: 12px; }
+  .sheet h2 { margin: 0; font-size: 16px; }
+  label.f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-2); font-weight: 600; }
+  .req { color: var(--danger); font-weight: 700; margin-left: 2px; }
+  input[type="text"], textarea {
+    font: inherit; font-size: 16px; color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%;
+  }
+  textarea { min-height: 72px; resize: vertical; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  input.invalid { border-color: var(--danger); outline-color: var(--danger); }
+  .err { color: var(--danger); font-size: 12px; font-weight: 600; min-height: 0; }
+  .tag-sugs { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag-sugs:empty { display: none; }
+  .sug {
+    border: 0; cursor: pointer; font-size: 12px; border-radius: 999px; padding: 3px 9px 3px 7px;
+    background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); display: inline-flex; align-items: center; gap: 4px;
+  }
+  .sug i { width: 7px; height: 7px; border-radius: 50%; background: var(--tc); }
+  .sug[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent); font-weight: 600; }
+  .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .seg button {
+    border: 0; cursor: pointer; border-radius: 8px; padding: 6px 2px; font-size: 12px; line-height: 1.25;
+    background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); color: var(--text-2);
+  }
+  .seg button small { display: block; font-size: 10px; }
+  .seg button[aria-checked="true"] { background: var(--sc); color: #fff; box-shadow: none; font-weight: 700; }
+  .seg-hint { font-size: 11px; color: var(--text-3); font-weight: 400; }
+  .form-btns { display: flex; gap: 8px; align-items: center; }
+  .form-btns .spacer { flex: 1; }
+
+  /* Toast */
+  .toast {
+    position: fixed; left: 50%; bottom: calc(70px + var(--safe-b)); transform: translateX(-50%) translateY(20px);
+    background: #2b2f36; color: #fff; border-radius: 10px; padding: 8px 8px 8px 14px; font-size: 13px;
+    display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-lift);
+    opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; z-index: 20; max-width: calc(100% - 24px);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%); pointer-events: auto; }
+  .toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toast button { border: 0; background: transparent; color: #9dbaff; font-weight: 700; cursor: pointer; padding: 4px 8px; flex: none; }
+  @media (prefers-color-scheme: dark) { .toast { background: #e8eaee; color: #1d2026; } .toast button { color: #2d5be0; } }
+
+  [hidden] { display: none !important; }
+
+  @media (min-width: 720px) {
+    :root { --step: 28px; }
+    header { padding-left: 20px; padding-right: 20px; }
+    main { padding: 0 20px; }
+    h1 { font-size: 18px; }
+    .cards { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+    .card-title { font-size: 13px; }
+    .card-meta { font-size: 11px; }
+    .band-name { font-size: 13px; }
+    .band-def { font-size: 12px; }
+    dialog { max-width: 480px; margin: auto; border-radius: 16px; }
+  }
+  @media (hover: hover) and (pointer: fine) { .card[draggable="true"] { cursor: grab; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="top">
+      <h1>学びの4段階</h1>
+      <div class="view-toggle" role="group" aria-label="表示切り替え">
+        <button type="button" id="vBoard" aria-pressed="true">ボード</button>
+        <button type="button" id="vAch" aria-pressed="false">達成リスト</button>
+      </div>
+    </div>
+    <div class="summary" id="summary" aria-label="段階ごとの件数"></div>
+  </header>
+  <main>
+    <section class="board" id="board" aria-label="段階ボード"></section>
+    <section class="achieved" id="achieved" hidden aria-label="達成リスト">
+      <h2>達成リスト</h2>
+      <ul class="ach-list" id="achList"></ul>
+    </section>
+  </main>
+  <footer>
+    <button type="button" class="add" id="addBtn">＋ 追加</button>
+  </footer>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form class="sheet" id="form" method="dialog" novalidate autocomplete="off">
+    <h2 id="dlgTitle">追加</h2>
+    <label class="f">
+      <span>名前<span class="req" aria-hidden="true">*</span></span>
+      <input type="text" id="fName" maxlength="120" enterkeyhint="done" aria-required="true">
+      <span class="err" id="fNameErr" hidden>名前を入力してください</span>
+    </label>
+    <label class="f">
+      <span>分類タグ</span>
+      <input type="text" id="fTag" maxlength="30" list="tagList" placeholder="例：資格、業務、スキル">
+      <datalist id="tagList"></datalist>
+    </label>
+    <div class="tag-sugs" id="tagSugs" aria-label="既存のタグ"></div>
+    <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-2);font-weight:600">
+      <span>段階</span>
+      <div class="seg" id="fStage" role="radiogroup" aria-label="段階"></div>
+      <span class="seg-hint" id="fStageHint"></span>
+    </div>
+    <label class="f">
+      <span>備考</span>
+      <textarea id="fNotes" rows="3" maxlength="2000"></textarea>
+    </label>
+    <div class="form-btns">
+      <button type="button" class="btn danger-ghost" id="fDel" hidden>削除</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="fCancel">キャンセル</button>
+      <button type="submit" class="btn primary" id="fSave">保存</button>
+    </div>
+    <div class="confirm" id="fConfirm" hidden role="alert">
+      <p>このアイテムを削除しますか？</p>
+      <div class="btns">
+        <button type="button" class="btn danger sm" id="fDelYes">削除する</button>
+        <button type="button" class="btn sm" id="fDelNo">やめる</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button type="button" id="toastUndo">元に戻す</button></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var KEY = 'stages-items-v1';
+  var DAY = 86400000;
+  var STAGES = {
+    1: { name: '第1段階', def: '何がわからないかもわからない' },
+    2: { name: '第2段階', def: '知っているができない' },
+    3: { name: '第3段階', def: '意識すればできる' },
+    4: { name: '第4段階', def: '意識しなくてもできる' }
+  };
+  var STALE_DAYS = 30;
+  var TAG_COLORS = ['#e0604f', '#e8963a', '#c9a227', '#4fae5a', '#2fa3a0', '#3d8be0', '#6a6fe0', '#a05ad6', '#d65a9c', '#8a7a68'];
+
+  var items = [];
+  var view = 'board';
+  var editingId = null;
+  var formStage = 1;
+  var flashId = null;
+  var pendingAchDelete = null;
+  var undoState = null;
+  var toastTimer = null;
+  var canDrag = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  // ---------- storage ----------
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  function seed() {
+    var now = Date.now();
+    var list = [
+      [1, 'Copilot Studioのエージェント構築'],
+      [2, 'AZ-305（ストレージサービスの選定）'],
+      [2, 'MD-102'],
+      [3, 'Intuneアプリのパッケージングと配布'],
+      [3, '口頭での説明（例え話）'],
+      [4, '接客販売（スポーツ用品）']
+    ];
+    return list.map(function (s, i) {
+      return { id: uid() + i, name: s[1], tag: '', notes: '', stage: s[0], enteredAt: now, createdAt: now, achievedAt: null };
+    });
+  }
+
+  function load() {
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); } catch (e) { raw = null; }
+    if (raw === null) {
+      items = seed();
+      save();
+      return;
+    }
+    try {
+      var data = JSON.parse(raw);
+      items = Array.isArray(data) ? data.filter(function (x) { return x && typeof x.name === 'string'; }).map(normalize) : [];
+    } catch (e) {
+      items = [];
+    }
+  }
+
+  function normalize(x) {
+    var st = parseInt(x.stage, 10);
+    if (!(st >= 1 && st <= 4)) st = 1;
+    return {
+      id: String(x.id || uid()),
+      name: x.name,
+      tag: typeof x.tag === 'string' ? x.tag : '',
+      notes: typeof x.notes === 'string' ? x.notes : '',
+      stage: st,
+      enteredAt: Number(x.enteredAt) || Date.now(),
+      createdAt: Number(x.createdAt) || Date.now(),
+      achievedAt: x.achievedAt ? Number(x.achievedAt) : null
+    };
+  }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) { /* storage unavailable */ }
+  }
+
+  // ---------- helpers ----------
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function startOfDay(t) { var d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+  function dayCount(item) {
+    // 段に入った日を1日目として数える
+    return Math.max(1, Math.round((startOfDay(Date.now()) - startOfDay(item.enteredAt)) / DAY) + 1);
+  }
+  function fmtDate(t) {
+    var d = new Date(t);
+    return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
+  }
+  function tagColor(tag) {
+    var h = 0;
+    for (var i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) >>> 0;
+    return TAG_COLORS[h % TAG_COLORS.length];
+  }
+  function byId(id) {
+    for (var i = 0; i < items.length; i++) if (items[i].id === id) return items[i];
+    return null;
+  }
+  function active() { return items.filter(function (x) { return !x.achievedAt; }); }
+  function achievedItems() {
+    return items.filter(function (x) { return !!x.achievedAt; }).sort(function (a, b) { return b.achievedAt - a.achievedAt; });
+  }
+  function allTags() {
+    var seen = {}, out = [];
+    items.forEach(function (x) {
+      var t = (x.tag || '').trim();
+      if (t && !seen[t]) { seen[t] = 1; out.push(t); }
+    });
+    return out.sort(function (a, b) { return a.localeCompare(b, 'ja'); });
+  }
+  var MEMO_SVG = '<svg class="memo" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M3 1.5h7l3 3v10H3zM4.5 3v10h7V5.2L9.3 3zM6 7h4v1.2H6zm0 2.5h4v1.2H6z"/></svg>';
+
+  // ---------- actions ----------
+  function moveTo(id, stage) {
+    var it = byId(id);
+    if (!it || it.achievedAt || stage < 1 || stage > 4 || it.stage === stage) return;
+    it.stage = stage;
+    it.enteredAt = Date.now();
+    flashId = id;
+    save();
+    render();
+  }
+
+  function graduate(id) {
+    var it = byId(id);
+    if (!it || it.stage !== 4) return;
+    it.achievedAt = Date.now();
+    save();
+    render();
+    showToast('「' + it.name + '」を達成リストへ移しました', null);
+  }
+
+  function returnToBoard(id) {
+    var it = byId(id);
+    if (!it) return;
+    it.achievedAt = null;
+    it.stage = 4;
+    it.enteredAt = Date.now();
+    flashId = id;
+    pendingAchDelete = null;
+    save();
+    render();
+    showToast('「' + it.name + '」を第4段階へ戻しました', null);
+  }
+
+  function removeItem(id) {
+    var idx = -1;
+    for (var i = 0; i < items.length; i++) if (items[i].id === id) { idx = i; break; }
+    if (idx < 0) return;
+    var removed = items.splice(idx, 1)[0];
+    undoState = { item: removed, index: idx };
+    pendingAchDelete = null;
+    save();
+    render();
+    showToast('「' + removed.name + '」を削除しました', function () {
+      if (!undoState) return;
+      items.splice(Math.min(undoState.index, items.length), 0, undoState.item);
+      flashId = undoState.item.id;
+      undoState = null;
+      save();
+      render();
+    });
+  }
+
+  // ---------- toast ----------
+  var toastUndoFn = null;
+  function showToast(msg, undoFn) {
+    $('toastMsg').textContent = msg;
+    toastUndoFn = undoFn;
+    $('toastUndo').hidden = !undoFn;
+    $('toast').classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, undoFn ? 6000 : 2500);
+  }
+  function hideToast() {
+    $('toast').classList.remove('show');
+    toastUndoFn = null;
+    clearTimeout(toastTimer);
+  }
+  $('toastUndo').addEventListener('click', function () {
+    var fn = toastUndoFn;
+    hideToast();
+    if (fn) fn();
+  });
+
+  // ---------- render ----------
+  function render() {
+    renderSummary();
+    if (view === 'board') renderBoard(); else renderAchieved();
+    $('board').hidden = view !== 'board';
+    $('achieved').hidden = view !== 'achieved';
+    $('vBoard').setAttribute('aria-pressed', String(view === 'board'));
+    $('vAch').setAttribute('aria-pressed', String(view === 'achieved'));
+    flashId = null;
+  }
+
+  function renderSummary() {
+    var box = $('summary');
+    box.textContent = '';
+    var act = active();
+    [4, 3, 2, 1].forEach(function (s) {
+      var n = act.filter(function (x) { return x.stage === s; }).length;
+      var c = el('button', 'chip');
+      c.type = 'button';
+      c.style.setProperty('--sc', 'var(--s' + s + ')');
+      c.appendChild(el('i'));
+      c.appendChild(document.createTextNode('第' + s + ' '));
+      c.appendChild(el('b', null, String(n)));
+      c.setAttribute('aria-label', STAGES[s].name + ' ' + n + '件');
+      c.addEventListener('click', function () {
+        view = 'board';
+        render();
+        var band = document.querySelector('.band[data-stage="' + s + '"]');
+        if (band) {
+          band.classList.add('drop-over');
+          setTimeout(function () { band.classList.remove('drop-over'); }, 500);
+        }
+      });
+      box.appendChild(c);
+    });
+    var a = el('button', 'chip achieved');
+    a.type = 'button';
+    a.appendChild(el('i', null, '🏁'));
+    a.appendChild(document.createTextNode('達成 '));
+    a.appendChild(el('b', null, String(achievedItems().length)));
+    a.setAttribute('aria-label', '達成済み ' + achievedItems().length + '件、達成リストを表示');
+    a.addEventListener('click', function () { view = view === 'achieved' ? 'board' : 'achieved'; render(); });
+    box.appendChild(a);
+  }
+
+  function renderBoard() {
+    var board = $('board');
+    var scrolls = {};
+    board.querySelectorAll('.band').forEach(function (b) {
+      var c = b.querySelector('.cards');
+      if (c) scrolls[b.dataset.stage] = c.scrollTop;
+    });
+    board.textContent = '';
+    var act = active();
+    [4, 3, 2, 1].forEach(function (s) {
+      var list = act.filter(function (x) { return x.stage === s; })
+        .sort(function (a, b) { return a.enteredAt - b.enteredAt; });
+      var band = el('div', 'band');
+      band.dataset.stage = String(s);
+      band.setAttribute('role', 'region');
+      band.setAttribute('aria-label', STAGES[s].name + '：' + STAGES[s].def);
+
+      var head = el('div', 'band-head');
+      head.appendChild(el('span', 'band-no', String(s)));
+      head.appendChild(el('span', 'band-name', STAGES[s].name));
+      head.appendChild(el('span', 'band-def', STAGES[s].def));
+      var cnt = el('span', 'band-count');
+      cnt.appendChild(el('b', null, String(list.length)));
+      cnt.appendChild(document.createTextNode('件'));
+      head.appendChild(cnt);
+      band.appendChild(head);
+
+      var ul = el('ul', 'cards');
+      if (!list.length) ul.appendChild(el('li', 'empty-band', 'なし'));
+      list.forEach(function (it) { ul.appendChild(renderCard(it)); });
+      band.appendChild(ul);
+
+      if (canDrag) bindDrop(band, s);
+      board.appendChild(band);
+      if (scrolls[s]) ul.scrollTop = scrolls[s];
+    });
+  }
+
+  function renderCard(it) {
+    var li = el('li', 'card' + (it.id === flashId ? ' flash' : ''));
+    li.dataset.id = it.id;
+    li.tabIndex = 0;
+    li.setAttribute('aria-label', it.name + '、' + dayCount(it) + '日目、タップで編集');
+
+    var body = el('div', 'card-body');
+    body.appendChild(el('div', 'card-title', it.name));
+    var meta = el('div', 'card-meta');
+    if (it.tag) {
+      var tg = el('span', 'tag');
+      tg.style.setProperty('--tc', tagColor(it.tag));
+      tg.appendChild(el('i'));
+      tg.appendChild(el('span', null, it.tag));
+      tg.title = it.tag;
+      meta.appendChild(tg);
+    }
+    var d = dayCount(it);
+    var days = el('span', 'days' + (it.stage === 3 && d >= STALE_DAYS ? ' stale' : ''), d + '日目');
+    meta.appendChild(days);
+    if (it.notes && it.notes.trim()) {
+      var m = el('span');
+      m.innerHTML = MEMO_SVG;
+      m.title = 'メモあり';
+      meta.appendChild(m.firstChild);
+    }
+    body.appendChild(meta);
+    li.appendChild(body);
+
+    var acts = el('div', 'card-actions');
+    var up = el('button', 'mv', '▲');
+    up.type = 'button';
+    up.setAttribute('aria-label', '1段上げる');
+    up.title = '1段上げる';
+    up.disabled = it.stage >= 4;
+    up.addEventListener('click', function (e) { e.stopPropagation(); moveTo(it.id, it.stage + 1); });
+    var dn = el('button', 'mv', '▼');
+    dn.type = 'button';
+    dn.setAttribute('aria-label', '1段下げる');
+    dn.title = '1段下げる';
+    dn.disabled = it.stage <= 1;
+    dn.addEventListener('click', function (e) { e.stopPropagation(); moveTo(it.id, it.stage - 1); });
+    if (it.stage < 4) acts.appendChild(up);
+    acts.appendChild(dn);
+    li.appendChild(acts);
+
+    if (it.stage === 4) {
+      var g = el('button', 'grad', '達成');
+      g.type = 'button';
+      g.setAttribute('aria-label', '達成して達成リストへ移す');
+      g.addEventListener('click', function (e) { e.stopPropagation(); graduate(it.id); });
+      li.appendChild(g);
+    }
+
+    li.addEventListener('click', function () { openForm(it.id); });
+    li.addEventListener('keydown', function (e) {
+      if (e.target !== li) return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openForm(it.id); }
+    });
+
+    if (canDrag) {
+      li.draggable = true;
+      li.addEventListener('dragstart', function (e) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', it.id);
+        setTimeout(function () { li.classList.add('dragging'); }, 0);
+      });
+      li.addEventListener('dragend', function () {
+        li.classList.remove('dragging');
+        document.querySelectorAll('.band.drop-over').forEach(function (b) { b.classList.remove('drop-over'); });
+      });
+    }
+    return li;
+  }
+
+  function bindDrop(band, stage) {
+    var depth = 0;
+    band.addEventListener('dragenter', function (e) { e.preventDefault(); depth++; band.classList.add('drop-over'); });
+    band.addEventListener('dragover', function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+    band.addEventListener('dragleave', function () { depth = Math.max(0, depth - 1); if (!depth) band.classList.remove('drop-over'); });
+    band.addEventListener('drop', function (e) {
+      e.preventDefault();
+      depth = 0;
+      band.classList.remove('drop-over');
+      var id = e.dataTransfer.getData('text/plain');
+      if (id) moveTo(id, stage);
+    });
+  }
+
+  function renderAchieved() {
+    var ul = $('achList');
+    ul.textContent = '';
+    var list = achievedItems();
+    if (!list.length) {
+      ul.appendChild(el('li', 'ach-empty', 'まだ達成したアイテムはありません。第4段階のカードの「達成」で移せます。'));
+      return;
+    }
+    list.forEach(function (it) {
+      var li = el('li', 'ach');
+      var row = el('div', 'ach-row');
+      var main = el('div', 'ach-main');
+      main.appendChild(el('div', 'ach-name', it.name));
+      var meta = el('div', 'ach-meta');
+      if (it.tag) {
+        var tg = el('span', 'tag');
+        tg.style.setProperty('--tc', tagColor(it.tag));
+        tg.appendChild(el('i'));
+        tg.appendChild(el('span', null, it.tag));
+        meta.appendChild(tg);
+      }
+      meta.appendChild(el('span', null, '達成日 ' + fmtDate(it.achievedAt)));
+      main.appendChild(meta);
+      row.appendChild(main);
+
+      var btns = el('div', 'ach-btns');
+      var back = el('button', 'btn sm', 'ボードへ戻す');
+      back.type = 'button';
+      back.title = '第4段階へ戻す';
+      back.addEventListener('click', function () { returnToBoard(it.id); });
+      var del = el('button', 'btn sm danger-ghost', '削除');
+      del.type = 'button';
+      del.addEventListener('click', function () { pendingAchDelete = it.id; renderAchieved(); });
+      btns.appendChild(back);
+      btns.appendChild(del);
+      row.appendChild(btns);
+      li.appendChild(row);
+
+      if (pendingAchDelete === it.id) {
+        var cf = el('div', 'confirm');
+        cf.setAttribute('role', 'alert');
+        cf.appendChild(el('p', null, 'このアイテムを削除しますか？'));
+        var cb = el('div', 'btns');
+        var yes = el('button', 'btn danger sm', '削除する');
+        yes.type = 'button';
+        yes.addEventListener('click', function () { removeItem(it.id); });
+        var no = el('button', 'btn sm', 'やめる');
+        no.type = 'button';
+        no.addEventListener('click', function () { pendingAchDelete = null; renderAchieved(); });
+        cb.appendChild(yes);
+        cb.appendChild(no);
+        cf.appendChild(cb);
+        li.appendChild(cf);
+        setTimeout(function () { yes.focus(); }, 0);
+      }
+      ul.appendChild(li);
+    });
+  }
+
+  // ---------- form ----------
+  var dlg = $('dlg');
+
+  function renderStageSeg() {
+    var seg = $('fStage');
+    seg.textContent = '';
+    [1, 2, 3, 4].forEach(function (s) {
+      var b = el('button');
+      b.type = 'button';
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', String(formStage === s));
+      b.style.setProperty('--sc', 'var(--s' + s + ')');
+      b.appendChild(document.createTextNode(STAGES[s].name));
+      b.title = STAGES[s].def;
+      b.addEventListener('click', function () { formStage = s; renderStageSeg(); });
+      seg.appendChild(b);
+    });
+    $('fStageHint').textContent = STAGES[formStage].def;
+  }
+
+  function renderTagSugs() {
+    var tags = allTags();
+    var cur = $('fTag').value.trim();
+    var dl = $('tagList');
+    dl.textContent = '';
+    tags.forEach(function (t) { var o = document.createElement('option'); o.value = t; dl.appendChild(o); });
+    var box = $('tagSugs');
+    box.textContent = '';
+    tags.forEach(function (t) {
+      var b = el('button', 'sug');
+      b.type = 'button';
+      b.style.setProperty('--tc', tagColor(t));
+      b.appendChild(el('i'));
+      b.appendChild(document.createTextNode(t));
+      b.setAttribute('aria-pressed', String(cur === t));
+      b.addEventListener('click', function () {
+        $('fTag').value = cur === t ? '' : t;
+        renderTagSugs();
+      });
+      box.appendChild(b);
+    });
+  }
+  $('fTag').addEventListener('input', renderTagSugs);
+
+  function setConfirm(show) {
+    $('fConfirm').hidden = !show;
+    $('fDel').hidden = !editingId || show;
+    if (show) $('fDelNo').focus();
+  }
+
+  function openForm(id) {
+    var it = id ? byId(id) : null;
+    editingId = it ? it.id : null;
+    $('dlgTitle').textContent = it ? '編集' : '追加';
+    $('fName').value = it ? it.name : '';
+    $('fTag').value = it ? it.tag : '';
+    $('fNotes').value = it ? it.notes : '';
+    formStage = it ? it.stage : 1;
+    $('fName').classList.remove('invalid');
+    $('fNameErr').hidden = true;
+    renderStageSeg();
+    renderTagSugs();
+    setConfirm(false);
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    if (!it) setTimeout(function () { $('fName').focus(); }, 30);
+  }
+
+  function closeForm() {
+    if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    editingId = null;
+  }
+
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = $('fName').value.trim();
+    if (!name) {
+      $('fName').classList.add('invalid');
+      $('fNameErr').hidden = false;
+      $('fName').focus();
+      return;
+    }
+    var tag = $('fTag').value.trim();
+    var notes = $('fNotes').value.replace(/\s+$/, '');
+    var now = Date.now();
+    if (editingId) {
+      var it = byId(editingId);
+      if (it) {
+        it.name = name;
+        it.tag = tag;
+        it.notes = notes;
+        if (!it.achievedAt && it.stage !== formStage) {
+          it.stage = formStage;
+          it.enteredAt = now;
+        }
+        flashId = it.id;
+      }
+    } else {
+      var n = { id: uid(), name: name, tag: tag, notes: notes, stage: formStage, enteredAt: now, createdAt: now, achievedAt: null };
+      items.push(n);
+      flashId = n.id;
+      view = 'board';
+    }
+    save();
+    closeForm();
+    render();
+  });
+  $('fName').addEventListener('input', function () {
+    if (this.value.trim()) { this.classList.remove('invalid'); $('fNameErr').hidden = true; }
+  });
+  $('fCancel').addEventListener('click', closeForm);
+  $('fDel').addEventListener('click', function () { setConfirm(true); });
+  $('fDelNo').addEventListener('click', function () { setConfirm(false); $('fDel').focus(); });
+  $('fDelYes').addEventListener('click', function () {
+    var id = editingId;
+    closeForm();
+    if (id) removeItem(id);
+  });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) closeForm(); });
+  dlg.addEventListener('close', function () { editingId = null; });
+
+  // ---------- view toggle ----------
+  $('vBoard').addEventListener('click', function () { view = 'board'; pendingAchDelete = null; render(); });
+  $('vAch').addEventListener('click', function () { view = 'achieved'; render(); });
+  $('addBtn').addEventListener('click', function () { openForm(null); });
+
+  // 日付が変わったら日数を更新
+  var lastDay = startOfDay(Date.now());
+  function refreshIfNewDay() {
+    var d = startOfDay(Date.now());
+    if (d !== lastDay) { lastDay = d; render(); }
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) refreshIfNewDay(); });
+  setInterval(refreshIfNewDay, 60000);
+
+  // 他タブでの変更を反映
+  window.addEventListener('storage', function (e) {
+    if (e.key === KEY && e.newValue !== null) { load(); render(); }
+  });
+
+  load();
+  render();
+
+  if (/^https?:$/.test(location.protocol) && 'serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+})();
+</script>
+</body>
+</html>
