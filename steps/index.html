@@ -925,8 +925,69 @@
     if (e.key === KEY && e.newValue !== null) { load(); render(); }
   });
 
+  // ---------- link import (#add=<base64url JSON>) ----------
+  function b64urlToUtf8(s) {
+    s = s.replace(/=+$/, '');
+    if (!/^[A-Za-z0-9_-]+$/.test(s) || s.length % 4 === 1) throw new Error('bad base64url');
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    if (typeof TextDecoder === 'function') return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    return decodeURIComponent(escape(bin));
+  }
+
+  function importFromHash() {
+    var m = /^#add=(.*)$/.exec(location.hash || '');
+    if (!m) return;
+    var data;
+    try {
+      var raw = m[1];
+      try { raw = decodeURIComponent(raw); } catch (e) { /* keep as is */ }
+      data = JSON.parse(b64urlToUtf8(raw.replace(/\s+/g, '')));
+    } catch (e) { return; }
+    if (!data || typeof data !== 'object' || data.app !== 'stages' || !Array.isArray(data.items)) return;
+
+    var incoming = [];
+    data.items.forEach(function (x) {
+      if (!x || typeof x !== 'object' || typeof x.title !== 'string') return;
+      var title = x.title.trim().slice(0, 120);
+      if (!title) return;
+      var st = Number(x.stage);
+      if (!(st === 1 || st === 2 || st === 3 || st === 4)) st = 1;
+      incoming.push({
+        name: title,
+        stage: st,
+        tag: typeof x.tag === 'string' ? x.tag.trim().slice(0, 30) : '',
+        notes: typeof x.notes === 'string' ? x.notes.replace(/\s+$/, '').slice(0, 2000) : ''
+      });
+    });
+    if (!incoming.length) return;
+
+    var now = Date.now();
+    var added = 0;
+    incoming.forEach(function (x) {
+      var dup = items.some(function (it) { return !it.achievedAt && it.stage === x.stage && it.name.trim() === x.name; });
+      if (dup) return;
+      items.push({ id: uid(), name: x.name, tag: x.tag, notes: x.notes, stage: x.stage, enteredAt: now, createdAt: now, achievedAt: null });
+      added++;
+    });
+
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ }
+    if (added) {
+      view = 'board';
+      save();
+      render();
+      showToast(added + '件追加しました', null);
+    } else {
+      showToast('すでに登録されています', null);
+    }
+  }
+
   load();
   render();
+  try { importFromHash(); } catch (e) { /* never break startup */ }
 
   if (/^https?:$/.test(location.protocol) && 'serviceWorker' in navigator) {
     window.addEventListener('load', function () {
