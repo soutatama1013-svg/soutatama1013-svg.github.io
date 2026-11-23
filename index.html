@@ -1166,6 +1166,64 @@
   setInterval(function () { var d = todayISO(); if (d !== lastDay) { lastDay = d; render(); } }, 60000);
 
   render();
+
+  /* ---------- Link import (#add=<base64url JSON>) ---------- */
+  function decodeBase64Url(s) {
+    s = s.replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '');
+    if (!/^[A-Za-z0-9+\/]*$/.test(s) || s.length % 4 === 1) throw new Error('bad base64');
+    while (s.length % 4) s += '=';
+    var bin = atob(s);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    if (typeof TextDecoder === 'function') return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    return decodeURIComponent(escape(bin));
+  }
+  function validISODate(s) {
+    if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return '';
+    return isoDate(parseISO(s)) === s ? s : '';
+  }
+
+  function importFromHash() {
+    var m = /^#add=(.+)$/.exec(location.hash || '');
+    if (!m) return;
+    var data;
+    try {
+      var raw = m[1];
+      try { raw = decodeURIComponent(raw); } catch (e) { /* keep as-is */ }
+      data = JSON.parse(decodeBase64Url(raw));
+    } catch (e) { return; }
+    if (!data || typeof data !== 'object' || data.app !== 'quadrant' || !Array.isArray(data.items)) return;
+
+    var valid = 0, added = 0, base = Date.now();
+    data.items.forEach(function (it) {
+      if (!it || typeof it !== 'object' || typeof it.title !== 'string') return;
+      var title = it.title.trim().slice(0, 120);
+      if (!title) return;
+      valid++;
+      var q = Number(it.quadrant);
+      q = (q === 1 || q === 2 || q === 3 || q === 4) ? q : 2;
+      var dup = tasks.some(function (t) { return t.q === q && t.title.trim() === title; });
+      if (dup) return;
+      tasks.push({
+        id: uid() + added,
+        title: title,
+        tag: typeof it.project === 'string' ? it.project.trim().slice(0, 30) : '',
+        due: validISODate(it.due),
+        q: q,
+        notes: typeof it.notes === 'string' ? it.notes.replace(/\s+$/, '').slice(0, 2000) : '',
+        done: false,
+        createdAt: base + added,
+        doneAt: 0
+      });
+      added++;
+    });
+    if (!valid) return; // nothing usable in the payload → ignore silently
+
+    if (added) { save(); render(); }
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ }
+    showToast(added ? added + '件追加しました' : 'すでに登録されています');
+  }
+  try { importFromHash(); } catch (e) { /* never break startup */ }
 })();
 </script>
 <script>
