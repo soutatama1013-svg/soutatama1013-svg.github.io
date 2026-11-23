@@ -82,6 +82,13 @@
   .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
   .app-title { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: .02em; }
   .open-count { font-size: 12px; color: var(--text-2); }
+  .title-tools { display: flex; align-items: center; gap: 8px; flex: none; }
+  .link-import-btn {
+    height: 28px; padding: 0 10px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-2);
+    font-size: 12px; font-weight: 600; white-space: nowrap;
+  }
+  .link-import-btn:active { transform: scale(.97); }
 
   .meter {
     margin-top: 8px;
@@ -447,7 +454,10 @@
 <header class="app-header">
   <div class="title-row">
     <h1 class="app-title">四領域ボード</h1>
-    <span class="open-count" id="openCount"></span>
+    <div class="title-tools">
+      <span class="open-count" id="openCount"></span>
+      <button class="link-import-btn" id="linkImportBtn" type="button">リンクで追加</button>
+    </div>
   </div>
   <section class="meter" id="meter" aria-label="領域バランスメーター">
     <div class="meter-bar" id="meterBar" role="img" aria-label="">
@@ -536,6 +546,22 @@
       <button class="btn btn-secondary" type="button" id="moveCancel">キャンセル</button>
     </div>
   </div>
+</dialog>
+
+<!-- Paste-import dialog -->
+<dialog id="importDialog" aria-labelledby="importDialogTitle">
+  <form class="sheet" id="importForm" novalidate>
+    <h3 id="importDialogTitle">リンクで追加</h3>
+    <div class="field">
+      <textarea class="input" id="fImport" rows="4" autocomplete="off" autocapitalize="off" spellcheck="false" aria-labelledby="importDialogTitle" placeholder="追加リンクまたはコードを貼り付け"></textarea>
+      <div class="error" id="fImportErr" hidden>読み取れませんでした</div>
+    </div>
+    <div class="actions">
+      <span class="spacer"></span>
+      <button class="btn btn-secondary" type="button" id="importCancel">やめる</button>
+      <button class="btn btn-primary" type="submit">取り込む</button>
+    </div>
+  </form>
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite">
@@ -1183,16 +1209,15 @@
     return isoDate(parseISO(s)) === s ? s : '';
   }
 
-  function importFromHash() {
-    var m = /^#add=(.+)$/.exec(location.hash || '');
-    if (!m) return;
+  // Shared by hash import and paste import.
+  // Returns null if unreadable / wrong app / no usable items, else { added: n } (tasks saved + rendered).
+  function importPayload(raw) {
     var data;
     try {
-      var raw = m[1];
       try { raw = decodeURIComponent(raw); } catch (e) { /* keep as-is */ }
       data = JSON.parse(decodeBase64Url(raw));
-    } catch (e) { return; }
-    if (!data || typeof data !== 'object' || data.app !== 'quadrant' || !Array.isArray(data.items)) return;
+    } catch (e) { return null; }
+    if (!data || typeof data !== 'object' || data.app !== 'quadrant' || !Array.isArray(data.items)) return null;
 
     var valid = 0, added = 0, base = Date.now();
     data.items.forEach(function (it) {
@@ -1217,13 +1242,60 @@
       });
       added++;
     });
-    if (!valid) return; // nothing usable in the payload → ignore silently
+    if (!valid) return null; // nothing usable in the payload
 
     if (added) { save(); render(); }
+    return { added: added };
+  }
+
+  function importFromHash() {
+    var m = /^#add=(.+)$/.exec(location.hash || '');
+    if (!m) return;
+    var res = importPayload(m[1]);
+    if (!res) return; // ignore silently
     try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ }
-    showToast(added ? added + '件追加しました' : 'すでに登録されています');
+    showToast(res.added ? res.added + '件追加しました' : 'すでに登録されています');
   }
   try { importFromHash(); } catch (e) { /* never break startup */ }
+
+  /* ---------- Paste import (in-app; iOS home-screen apps have separate storage) ---------- */
+  var importDialog = document.getElementById('importDialog');
+  var importForm = document.getElementById('importForm');
+  var fImport = document.getElementById('fImport');
+  var fImportErr = document.getElementById('fImportErr');
+  if (typeof importDialog.close !== 'function') importDialog.close = function () { importDialog.removeAttribute('open'); };
+  importDialog.addEventListener('click', function (e) { if (e.target === importDialog) importDialog.close(); });
+
+  function extractPayload(text) {
+    text = String(text || '');
+    var i = text.indexOf('#add=');
+    if (i < 0) return text.trim();
+    return text.slice(i + 5).trim().replace(/[^A-Za-z0-9_-]+$/, '');
+  }
+
+  document.getElementById('linkImportBtn').addEventListener('click', function () {
+    fImport.value = '';
+    fImportErr.hidden = true;
+    showDialog(importDialog);
+    setTimeout(function () { fImport.focus(); }, 30);
+  });
+  document.getElementById('importCancel').addEventListener('click', function () { importDialog.close(); });
+  fImport.addEventListener('input', function () { fImportErr.hidden = true; });
+
+  importForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var payload = extractPayload(fImport.value);
+    var res = null;
+    if (payload) { try { res = importPayload(payload); } catch (err) { res = null; } }
+    if (!res) {
+      fImportErr.hidden = false;   // also shown inline: the modal sheet can cover the toast
+      showToast('読み取れませんでした');
+      fImport.focus();
+      return;
+    }
+    importDialog.close();
+    showToast(res.added ? res.added + '件追加しました' : 'すでに登録されています');
+  });
 })();
 </script>
 <script>
